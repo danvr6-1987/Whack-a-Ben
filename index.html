@@ -115,7 +115,7 @@ const SUPABASE_URL='https://kcofnccgwpzzbalrfiud.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_TPbvEEbp0vRY8OIoWPmO3g_yom7KTsA';
 const onlineReady=Boolean(SUPABASE_URL&&SUPABASE_PUBLISHABLE_KEY);
 let onlineScores=[];
-async function scoreRequest(method,body){const response=await fetch(SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/ben_scores'+(method==='GET'?'?select=name,score,level,created_at&order=score.desc,created_at.asc&limit=1000':''),{method,headers:{'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',...(method==='POST'?{'Prefer':'return=minimal'}:{})},...(body?{body:JSON.stringify(body)}:{})});if(!response.ok)throw new Error('Leaderboard unavailable');return method==='GET'?response.json():null}
+async function scoreRequest(method,body){const response=await fetch(SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/ben_scores'+(method==='GET'?'?select=name,score,level,created_at&order=score.desc,created_at.asc&limit=100':''),{method,headers:{'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',...(method==='POST'?{'Prefer':'return=minimal'}:{})},...(body?{body:JSON.stringify(body)}:{})});if(!response.ok)throw new Error('Leaderboard unavailable');return method==='GET'?response.json():null}
 async function refreshOnlineScores(){if(!onlineReady)return;try{onlineScores=await scoreRequest('GET').then(rows => {
   const seen = new Set();
   const bestScores = rows.filter(row => {
