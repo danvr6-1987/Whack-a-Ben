@@ -147,7 +147,21 @@ async function refreshOnlineScores() {
 
 function getScores(){try{const v=JSON.parse(localStorage.getItem(scoreKey)||'[]');return Array.isArray(v)?v.filter(x=>x&&typeof x.score==='number').slice(0,10):[]}catch(e){return []}}
 function renderScores(){const scores=onlineReady?onlineScores:getScores();highscoreBody.replaceChildren();emptyScores.style.display=scores.length?'none':'block';document.getElementById('championStrip').textContent=scores.length?`👑 REIGNING CHAMPION: ${scores[0].name} • ${scores[0].score} PTS`:'👑 BE THE FIRST CHAMPION!';scores.forEach((entry,i)=>{const tr=document.createElement('tr');[String(i+1).padStart(2,'0'),entry.name,String(entry.level),String(entry.score).padStart(4,'0')].forEach((value,j)=>{const td=document.createElement('td');td.textContent=value;if(j===0)td.className='rank';tr.appendChild(td)});highscoreBody.appendChild(tr)})}
-function offerScore(){if(score<=0)return;const scores=onlineReady?onlineScores:getScores();if(scores.length>=10&&score<scores[scores.length-1].score)return;finalScore.textContent=`YOU SCORED ${score} POINTS • LEVEL ${level()}`;nameModal.classList.add('visible');playerName.value='';setTimeout(()=>playerName.focus(),100)}
+
+function offerScore(){
+  if(score<=0)return;
+
+  const scores=onlineReady?onlineScores:getScores();
+  const nameAlreadyKnown=false;
+
+  // Allow scores to be submitted so existing players
+  // can improve their personal best and new players
+  // can join the Top 20.
+  finalScore.textContent=`YOU SCORED ${score} POINTS • LEVEL ${level()}`;
+  nameModal.classList.add('visible');
+  playerName.value='';
+  setTimeout(()=>playerName.focus(),100);
+}
 scoreForm.addEventListener('submit',async e=>{e.preventDefault();const name=(playerName.value.trim().toUpperCase().replace(/[^A-Z0-9 _-]/g,'').slice(0,12)||'PLAYER');const saveBtn=scoreForm.querySelector('button');saveBtn.disabled=true;saveBtn.textContent='SAVING...';try{if(onlineReady){await scoreRequest('POST',{name,score,level:level()});nameModal.classList.remove('visible');msg.textContent=`🏆 ${name} — ${score} POINTS!`;await refreshOnlineScores()}else{const scores=getScores();scores.push({name,score,level:level(),date:Date.now()});scores.sort((a,b)=>b.score-a.score||a.date-b.date);try{localStorage.setItem(scoreKey,JSON.stringify(scores.slice(0,10)))}catch(e){}nameModal.classList.remove('visible');renderScores();msg.textContent=`🏆 ${name} — ${score} POINTS!`}}catch(err){msg.textContent='Could not save online. Check your connection and try again.';alert('Score could not be saved. Please try again.')}finally{saveBtn.disabled=false;saveBtn.textContent='SAVE MY SCORE ★'}});
 const scoreStatus=document.createElement('div');scoreStatus.id='scoreStatus';scoreStatus.className='leader-sub';scoreStatus.textContent=onlineReady?'🌐 CONNECTING TO WORLDWIDE SCORES...':'📱 LOCAL SCORES — ONLINE SETUP NEEDED';document.querySelector('.leaderboard .leader-sub').after(scoreStatus);
 renderScores();refreshOnlineScores();if(onlineReady){document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshOnlineScores()});setInterval(()=>{if(!document.hidden)refreshOnlineScores()},30000)}
