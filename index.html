@@ -116,16 +116,34 @@ const SUPABASE_PUBLISHABLE_KEY='sb_publishable_TPbvEEbp0vRY8OIoWPmO3g_yom7KTsA';
 const onlineReady=Boolean(SUPABASE_URL&&SUPABASE_PUBLISHABLE_KEY);
 let onlineScores=[];
 async function scoreRequest(method,body){const response=await fetch(SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/ben_scores'+(method==='GET'?'?select=name,score,level,created_at&order=score.desc,created_at.asc&limit=100':''),{method,headers:{'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',...(method==='POST'?{'Prefer':'return=minimal'}:{})},...(body?{body:JSON.stringify(body)}:{})});if(!response.ok)throw new Error('Leaderboard unavailable');return method==='GET'?response.json():null}
-async function refreshOnlineScores(){if(!onlineReady)return;try{onlineScores=await scoreRequest('GET').then(rows => {
-  const seen = new Set();
-  const bestScores = rows.filter(row => {
-    const name = row.name.trim().toUpperCase();
-    if (seen.has(name)) return false;
-    seen.add(name);
-    return true;
-  });
-  renderScores(bestScores.slice(0, 20));
-}) ;document.getElementById('scoreStatus').textContent='🌐 LIVE WORLDWIDE SCORES'}catch(e){document.getElementById('scoreStatus').textContent='⚠️ ONLINE SCORES UNAVAILABLE — TRY AGAIN LATER'}}
+
+async function refreshOnlineScores() {
+  if (!onlineReady) return;
+
+  try {
+    const rows = await scoreRequest('GET');
+    const seen = new Set();
+
+    onlineScores = rows.filter(row => {
+      const name = String(row.name || '').trim().toUpperCase();
+
+      if (seen.has(name)) return false;
+
+      seen.add(name);
+      return true;
+    }).slice(0, 20);
+
+    renderScores();
+
+    document.getElementById('scoreStatus').textContent =
+      '🌐 LIVE WORLDWIDE SCORES';
+
+  } catch (e) {
+    document.getElementById('scoreStatus').textContent =
+      '⚠️ ONLINE SCORES UNAVAILABLE — TRY AGAIN LATER';
+  }
+}
+
 
 function getScores(){try{const v=JSON.parse(localStorage.getItem(scoreKey)||'[]');return Array.isArray(v)?v.filter(x=>x&&typeof x.score==='number').slice(0,10):[]}catch(e){return []}}
 function renderScores(){const scores=onlineReady?onlineScores:getScores();highscoreBody.replaceChildren();emptyScores.style.display=scores.length?'none':'block';document.getElementById('championStrip').textContent=scores.length?`👑 REIGNING CHAMPION: ${scores[0].name} • ${scores[0].score} PTS`:'👑 BE THE FIRST CHAMPION!';scores.forEach((entry,i)=>{const tr=document.createElement('tr');[String(i+1).padStart(2,'0'),entry.name,String(entry.level),String(entry.score).padStart(4,'0')].forEach((value,j)=>{const td=document.createElement('td');td.textContent=value;if(j===0)td.className='rank';tr.appendChild(td)});highscoreBody.appendChild(tr)})}
